@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback } from "react";
 import AvatarDropzone from "./components/AvatarDropzone.jsx";
 import ChatInput from "./components/ChatInput.jsx";
+import MintModal from "./components/MintModal.jsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { generatePersona } from "./lib/openai.js";
 
@@ -32,6 +33,10 @@ export default function Explore() {
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
 
+  // Mint state
+  const [isMinted, setIsMinted] = useState(false);
+  const [showMintModal, setShowMintModal] = useState(false);
+
   const canSubmit = useMemo(() => {
     const hasRequired = (url && url.trim().length > 0) || (text && text.trim().length > 0);
     return hasRequired && !isGenerating;
@@ -48,6 +53,7 @@ export default function Explore() {
       
       setPersona(persona);
       setStoragePointers(null);
+      setIsMinted(false); // Reset mint status for new persona
       
       // Generate draftId for URL
       const draftId = Math.random().toString(36).slice(2, 10);
@@ -58,6 +64,20 @@ export default function Explore() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleMint = () => {
+    setIsMinted(true);
+    setShowMintModal(true);
+  };
+
+  const closeMintModal = () => {
+    setShowMintModal(false);
+  };
+
+  const handleTryChat = () => {
+    if (!isMinted) return; // Only allow chat if minted
+    setIsChatOpen(!isChatOpen);
   };
 
   const sendChatMessage = useCallback(async (userMessage) => {
@@ -113,7 +133,7 @@ User message: ${userMessage}`;
     } finally {
       setIsChatLoading(false);
     }
-  }, [chatInput, persona]);
+  }, [persona]);
 
   // Separate function to handle chat input changes
   const handleChatInputChange = useCallback((e) => {
@@ -175,20 +195,26 @@ User message: ${userMessage}`;
         <div className="flex gap-3">
           <button
             className="hover:border-white hover:border border border-transparent px-3 py-2 text-sm font-semibold text-white rounded bg-gradient-to-r from-[#5EE616] via-[#209B72] to-teal-500"
-            onClick={() => navigate("/mint" /* TODO: Connect to minting flow */)}
+            onClick={handleMint}
           >
             Mint as INFT
           </button>
           <button
-            className="px-3 py-2 text-sm font-semibold rounded border border-[#2F3548] hover:border-[#5EE616]"
-            onClick={() => setIsChatOpen(!isChatOpen)}
+            className={classNames(
+              "px-3 py-2 text-sm font-semibold rounded border",
+              isMinted 
+                ? "bg-gradient-to-r from-[#5EE616] via-[#209B72] to-teal-500 text-white hover:border-white hover:border border-transparent" 
+                : "border-[#2F3548] text-gray-400 cursor-not-allowed opacity-60"
+            )}
+            onClick={handleTryChat}
+            disabled={!isMinted}
           >
             {isChatOpen ? "Close Chat" : "Try Chat"}
           </button>
         </div>
 
         {/* Chat Interface */}
-        {isChatOpen && (
+        {isChatOpen && isMinted && (
           <div className="mt-4 border-t border-[#2F3548] pt-4">
             <div className="text-sm font-medium mb-3">Chat with {persona?.name}</div>
             
@@ -228,10 +254,10 @@ User message: ${userMessage}`;
             </div>
 
             {/* Chat Input */}
-                         <ChatInput
-               onSend={sendChatMessage}
-               disabled={isChatLoading}
-             />
+            <ChatInput
+              onSend={sendChatMessage}
+              disabled={isChatLoading}
+            />
           </div>
         )}
       </div>
@@ -312,7 +338,13 @@ User message: ${userMessage}`;
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 flex gap-3">
+                <button
+                  onClick={() => navigate('/')}
+                  className="px-4 py-2 rounded text-sm font-semibold text-white bg-gradient-to-r from-[#5EE616] via-[#209B72] to-teal-500 hover:border-white hover:border border border-transparent"
+                >
+                  Back
+                </button>
                 <button
                   id="btn-generate"
                   disabled={!canSubmit}
@@ -343,6 +375,13 @@ User message: ${userMessage}`;
           </div>
         </section>
       </div>
+
+      {/* Mint Modal */}
+      <MintModal 
+        isOpen={showMintModal} 
+        onClose={closeMintModal} 
+        personaName={persona?.name || "Unknown Persona"}
+      />
     </div>
   );
 }
