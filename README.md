@@ -1,122 +1,71 @@
 # 0G-AvatarNFT
 
-AI-powered NFT avatar creation platform with GPT integration.
+[![YouTube Demo](https://img.shields.io/badge/YouTube-Demo-red)](https://youtu.be/14HhlGqSuws)
+
+---
+
+## Introduction
+
+**0G-AvatarNFT** is an innovative project built on top of **0G’s Intelligent NFTs (INFTs)** technology.  
+It enables you to store your NFT **and** its associated AI Agent metadata together, bringing NFTs to life with privacy, ownership, and tradability.
+
+---
 
 ## Features
 
-- **AI Avatar Generation**: Create unique personas using GPT-3.5-turbo
-- **Image Upload**: Support for PNG, JPG, JPEG, WebP, and SVG formats (max 5MB)
-- **Dual Input Methods**: From URL or direct text description
-- **Real-time Preview**: See generated persona details before minting
-- **Responsive Design**: Mobile-first approach with desktop optimization
+- **NFT + Metadata Storage**  
+  Store both your NFT image and AI Agent data securely using **0G Storage**.
 
-## Setup
+- **AI Agent Activation**  
+  Power your NFT with **0G Compute**, enabling interactive AI functionalities.
 
-### Prerequisites
+- **Customizable AI Agents**  
+  Create AI characters for gaming, anime, virtual companionship, or even AI trading.
 
-- Node.js 18+ 
-- npm or yarn
-- OpenAI API key
+- **Full Ownership & Privacy**  
+  You control your INFT — all personal information stays with you, not centralized servers.
 
-### Installation
+- **Tradable Intelligence**  
+  Sell or transfer your trained INFTs on open marketplaces.
 
-1. Clone the repository
-```bash
-git clone <repository-url>
-cd 0g-nft
-```
+---
 
-2. Install dependencies
-```bash
-npm install
-```
+## Why 0G-AvatarNFT?
 
-3. Configure environment variables
-```bash
-# Copy the example file
-cp env.example .env
+Traditional AI Agents often:
+- Lack privacy and store user data on centralized servers.
+- Cannot be truly owned or transferred by the user.
 
-# Edit .env and add your OpenAI API key
-OPENAI_API_KEY=sk-your-actual-api-key-here
-```
+**0G-AvatarNFT** solves these issues by:
+- Combining decentralized **storage** and **compute** for secure AI operations.
+- Giving you total control over your AI Agent’s data and personality.
+- Making AI Agents tradable as NFTs.
 
-4. Start development server
-```bash
-npm run dev
-```
+---
 
-## Usage
+## Use Cases
 
-### Generate AI Persona
+1. **Gaming & Anime Characters** – Interactive, story-driven avatars.  
+2. **Virtual Companions** – Emotional, supportive AI that evolves with you.  
+3. **AI Trading Assistants** – Market-monitoring AI agents for crypto and finance.  
+4. **Digital Asset Trading** – Buy & sell intelligent avatars as NFT collectibles.
 
-1. Navigate to `/explore` page
-2. Upload an avatar image (optional)
-3. Choose input method:
-   - **From URL**: Paste a URL containing character information
-   - **From Text**: Write a description of your desired character
-4. Click "Generate" button
-5. Wait for GPT to process and return persona details
-6. Review the generated:
-   - Name
-   - Tagline
-   - Tags (3-6 keywords)
-   - Long description (background, personality, story)
+---
 
-### API Endpoint
+## Future Vision
 
-The persona generation uses a custom Vite dev server middleware:
+- **AI Agent Marketplace** – A global hub for buying, selling, and upgrading INFTs.  
+- **Cross-Metaverse Integration** – Use your AI Avatar across different platforms & games.  
+- **Continuous Learning** – Agents evolve and improve with interaction.
 
-- **POST** `/api/persona/generate`
-- **Body**: `{ text: string, url?: string, imageUrl?: string }`
-- **Response**: `{ persona: Persona, draftId: string }`
+---
 
-## Development
+## Demo
 
-### Project Structure
+Check out the demo video: [Watch on YouTube](https://youtu.be/14HhlGqSuws)
 
-```
-src/
-├── components/
-│   └── AvatarDropzone.jsx    # Image upload component
-├── types/
-│   └── persona.ts            # TypeScript interfaces
-├── App.jsx                   # Main app with routing
-├── Explore.jsx               # Persona generation page
-├── template.jsx              # Homepage template
-└── main.jsx                  # App entry point
-```
-
-### Key Components
-
-- **AvatarDropzone**: Handles drag & drop image uploads with validation
-- **Explore**: Main persona generation interface with left/right pane layout
-- **Vite Middleware**: Custom API endpoint for GPT integration
-
-### Environment Variables
-
-- `OPENAI_API_KEY`: Your OpenAI API key for GPT-3.5-turbo access
-
-## Building
-
-```bash
-# Development build
-npm run dev
-
-# Production build
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-## Technologies
-
-- **Frontend**: React 19, Vite
-- **Styling**: Tailwind CSS
-- **AI**: OpenAI GPT-3.5-turbo
-- **Routing**: React Router DOM
-- **Development**: Vite dev server with custom middleware
+---
 
 ## License
 
-[Your License Here]
+This project is licensed under the MIT License.
