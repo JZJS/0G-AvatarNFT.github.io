@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="177" height="27" viewBox="0 0 177 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Transparent background -->
+  <rect width="177" height="27" fill="transparent"/>
+  
+  <!-- Left icon group (approx 24x24 area with some padding) -->
+  <g transform="translate(2,1)" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Circle outline -->
+    <circle cx="12" cy="12.5" r="10.5" fill="none"/>
+    <!-- Diagonal slash -->
+    <line x1="6.5" y1="18.5" x2="17.5" y2="6.5"/>
+  </g>
+  
+  <!-- Brand text -->
+  <text x="32" y="18.5" fill="#FFFFFF" font-family="Inter,Arial,Helvetica,sans-serif"
+        font-size="13" font-weight="600" letter-spacing="0.2">
+    0G-AvatarNFT
+  </text>
+</svg>
