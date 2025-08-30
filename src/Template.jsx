@@ -160,6 +160,25 @@ const InfyNft = () => {
   const navigate = useNavigate();
   const [toggle, setToggle] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [walletAddress, setWalletAddress] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
+  
+  // Get MetaMask provider explicitly
+  const getMetaMaskProvider = () => {
+    const eth = window.ethereum;
+    if (!eth) return null;
+
+    // 1) 本身就是 MetaMask
+    if (eth.isMetaMask) return eth;
+
+    // 2) 多钱包并存（EIP-1193常见做法）
+    if (Array.isArray(eth.providers)) {
+      const mm = eth.providers.find((p) => p.isMetaMask);
+      if (mm) return mm;
+    }
+    return null;
+  };
+
   const toggleClass = () => {
     setIsNavOpen(!isNavOpen);
     const closeAfterClick = document.querySelector("#nav-icon4");
@@ -184,6 +203,70 @@ const InfyNft = () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  // Function to check if MetaMask is installed and connected
+  const checkIfWalletIsConnected = async () => {
+    try {
+      const provider = getMetaMaskProvider();
+      if (!provider) {
+        console.log("MetaMask not installed or not the active provider");
+        return;
+      }
+      const accounts = await provider.request({ method: "eth_accounts" });
+      if (accounts.length) setWalletAddress(accounts[0]);
+    } catch (e) {
+      console.error("Error checking wallet connection:", e);
+    }
+  };
+
+  // Function to connect wallet
+  const connectWallet = async () => {
+    try {
+      if (walletAddress) { 
+        setWalletAddress(""); 
+        return; 
+      }
+
+      setIsConnecting(true);
+      const provider = getMetaMaskProvider();
+      if (!provider) {
+        alert("Please install MetaMask (not other wallets).");
+        setIsConnecting(false);
+        return;
+      }
+      const accounts = await provider.request({ method: "eth_requestAccounts" });
+      setWalletAddress(accounts[0]);
+    } catch (error) {
+      console.error("Error connecting wallet:", error);
+      if (error?.code === 4001) alert("User rejected the connection request");
+      else alert("Failed to connect wallet. Please try again.");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  // Function to format wallet address
+  const formatWalletAddress = (address) => {
+    if (!address) return "";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  // Listen for account changes
+  useEffect(() => {
+    const provider = getMetaMaskProvider();
+    if (!provider) return;
+    const onAccountsChanged = (accounts) => {
+      setWalletAddress(accounts.length ? accounts[0] : "");
+    };
+    provider.on("accountsChanged", onAccountsChanged);
+    return () => provider.removeListener("accountsChanged", onAccountsChanged);
+  }, []);
+
+  // Check wallet connection on component mount
+  useEffect(() => {
+    checkIfWalletIsConnected();
+  }, []);
+
   return (
     <div className="bg-[#050C24] font-interfont">
       <div className="relative mx-auto pt-6 flex flex-col items-center justify-center text-[#D2DADF] bg-[url('/assets/nft/infynft/gradient.svg')] bg-cover">
@@ -244,8 +327,12 @@ const InfyNft = () => {
                   </div>
                 </div>
               </div>
-              <button className="hover:border-white hover:border border border-transparent whitespace-nowrap rounded px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-green-500 via-green-500 to-teal-500 text-white z-20">
-                Wallet Connect
+              <button 
+                onClick={connectWallet}
+                disabled={isConnecting}
+                className="hover:border-white hover:border border border-transparent whitespace-nowrap rounded px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-green-500 via-green-500 to-teal-500 text-white z-20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isConnecting ? "Connecting..." : walletAddress ? formatWalletAddress(walletAddress) : "Wallet Connect"}
               </button>
             </div>
           </div>
@@ -286,6 +373,15 @@ const InfyNft = () => {
                   <span className="font-bold text-lg ">{data}</span>
                 </div>
               ))}
+              <div className="p-3 border-t border-gray-600">
+                <button 
+                  onClick={connectWallet}
+                  disabled={isConnecting}
+                  className="w-full hover:border-white hover:border border border-transparent rounded px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-green-500 via-green-500 to-teal-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isConnecting ? "Connecting..." : walletAddress ? formatWalletAddress(walletAddress) : "Wallet Connect"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

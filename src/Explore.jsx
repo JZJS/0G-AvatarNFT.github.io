@@ -2,6 +2,7 @@ import React, { useMemo, useState, useCallback } from "react";
 import AvatarDropzone from "./components/AvatarDropzone.jsx";
 import ChatInput from "./components/ChatInput.jsx";
 import MintModal from "./components/MintModal.jsx";
+import MintButton from "@/components/MintButton";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { generatePersona } from "./lib/openai.js";
 
@@ -36,6 +37,16 @@ export default function Explore() {
   // Mint state
   const [isMinted, setIsMinted] = useState(false);
   const [showMintModal, setShowMintModal] = useState(false);
+  const [avatarBase64, setAvatarBase64] = useState(null);
+
+  // UX controls
+  const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
+  const [logs, setLogs] = useState([]);
+
+  const appendLog = useCallback((line) => {
+    const stamped = `[${new Date().toLocaleTimeString()}] ${line}`;
+    setLogs(prev => [...prev, stamped].slice(-200));
+  }, []);
 
   const canSubmit = useMemo(() => {
     const hasRequired = (url && url.trim().length > 0) || (text && text.trim().length > 0);
@@ -44,29 +55,49 @@ export default function Explore() {
 
   const onGenerate = async () => {
     if (!canSubmit) return;
+
+    // If generated once already, confirm before regenerating
+    if (hasGeneratedOnce) {
+      const ok = window.confirm("You have already generated a persona. Regenerate and discard current one?");
+      if (!ok) return;
+    }
+
     setIsGenerating(true);
     setError(null);
+    appendLog("Generating persona...");
     try {
       const inputText = text || url;
       const jsonStr = await generatePersona(inputText);
       const persona = JSON.parse(jsonStr);
-      
+
       setPersona(persona);
       setStoragePointers(null);
       setIsMinted(false); // Reset mint status for new persona
-      
+      setHasGeneratedOnce(true);
+      appendLog(`Persona generated: ${persona?.name || 'Unnamed'}`);
+
       // Generate draftId for URL
       const draftId = Math.random().toString(36).slice(2, 10);
       searchParams.set("draftId", draftId);
       setSearchParams(searchParams, { replace: true });
     } catch (e) {
       setError(e?.message || "Unknown error");
+      appendLog(`Generate error: ${e?.message || e}`);
     } finally {
       setIsGenerating(false);
     }
   };
 
+  const handleBack = () => {
+    if (hasGeneratedOnce || persona) {
+      const ok = window.confirm("You have generated content. Leave this page and discard it?");
+      if (!ok) return;
+    }
+    navigate('/');
+  };
+
   const handleMint = () => {
+    // Deprecated by on-chain mint flow; kept for backward compatibility
     setIsMinted(true);
     setShowMintModal(true);
   };
@@ -82,13 +113,13 @@ export default function Explore() {
 
   const sendChatMessage = useCallback(async (userMessage) => {
     if (!userMessage || !persona) return;
-    
+
     // Add user message to chat
     const newUserMessage = { role: "user", content: userMessage, timestamp: new Date() };
     setChatMessages(prev => [...prev, newUserMessage]);
-    
+
     setIsChatLoading(true);
-    
+
     try {
       // Create context-aware prompt with persona metadata
       const contextPrompt = `You are ${persona.name}, a character with the following background:
@@ -122,11 +153,11 @@ User message: ${userMessage}`;
 
       const data = await response.json();
       const aiResponse = data.choices?.[0]?.message?.content || "Sorry, I couldn't respond properly.";
-      
+
       // Add AI response to chat
       const newAiMessage = { role: "assistant", content: aiResponse, timestamp: new Date() };
       setChatMessages(prev => [...prev, newAiMessage]);
-      
+
     } catch (error) {
       const errorMessage = { role: "system", content: `Error: ${error.message}`, timestamp: new Date() };
       setChatMessages(prev => [...prev, errorMessage]);
@@ -156,6 +187,19 @@ User message: ${userMessage}`;
       </div>
     </div>
   );
+
+  React.useEffect(() => {
+    if (!avatarFile) { setAvatarBase64(null); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === 'string') {
+        const commaIdx = result.indexOf(',');
+        setAvatarBase64(commaIdx > -1 ? result.slice(commaIdx + 1) : result);
+      }
+    };
+    reader.readAsDataURL(avatarFile);
+  }, [avatarFile]);
 
   const RightCard = () => {
     const metaSize = avatarFile ? `${(avatarFile.size / 1024).toFixed(0)} KB` : "-";
@@ -193,12 +237,13 @@ User message: ${userMessage}`;
         </div>
         
         <div className="flex gap-3">
-          <button
-            className="hover:border-white hover:border border border-transparent px-3 py-2 text-sm font-semibold text-white rounded bg-gradient-to-r from-[#5EE616] via-[#209B72] to-teal-500"
-            onClick={handleMint}
-          >
-            Mint as INFT
-          </button>
+          <MintButton
+            imageBase64={avatarBase64 || undefined}
+            agentMeta={persona || {}}
+            onMinted={() => { setIsMinted(true); appendLog('Minted successfully.'); }}
+            // pass logger
+            logFn={appendLog}
+          />
           <button
             className={classNames(
               "px-3 py-2 text-sm font-semibold rounded border",
@@ -340,7 +385,7 @@ User message: ${userMessage}`;
 
               <div className="pt-2 flex gap-3">
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={handleBack}
                   className="px-4 py-2 rounded text-sm font-semibold text-white bg-gradient-to-r from-[#5EE616] via-[#209B72] to-teal-500 hover:border-white hover:border border border-transparent"
                 >
                   Back
@@ -355,13 +400,22 @@ User message: ${userMessage}`;
                     canSubmit ? "bg-gradient-to-r from-[#5EE616] via-[#209B72] to-teal-500" : "bg-[#2F3548] opacity-60 cursor-not-allowed"
                   )}
                 >
-                  {isGenerating ? "Generating..." : "Generate"}
+                  {isGenerating ? "Generating..." : (hasGeneratedOnce ? "Regenerate" : "Generate")}
                 </button>
               </div>
 
               {error ? (
                 <div className="text-sm text-red-400">{error}</div>
               ) : null}
+
+              {/* Logs panel bottom-left */}
+              <div className="mt-4 h-40 overflow-y-auto bg-[#0e152f] rounded border border-[#2F3548] p-3 text-xs">
+                {logs.length === 0 ? (
+                  <div className="opacity-70">Logs will appear here.</div>
+                ) : (
+                  <pre className="whitespace-pre-wrap break-words">{logs.join("\n")}</pre>
+                )}
+              </div>
             </div>
 
             {/* RightPane */}
