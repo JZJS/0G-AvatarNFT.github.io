@@ -4,7 +4,12 @@ import { ethers, keccak256, toUtf8Bytes } from 'ethers';
 import { getMetaMaskProvider } from './provider';
 
 const RPC_URL = import.meta.env.VITE_OG_RPC_URL || 'https://evmrpc-testnet.0g.ai/';
-const INDEXER_RPC = import.meta.env.VITE_OG_INDEXER_RPC || 'https://indexer-storage-testnet-turbo.0g.ai';
+const INDEXER_RPC =
+        import.meta.env.VITE_OG_INDEXER_RPC || 'https://indexer-storage-testnet-turbo.0g.ai';
+
+// Number of times to retry a failed upload. Helps mitigate occasional
+// `missing revert data` errors from the network.
+const UPLOAD_RETRIES = 2; // total attempts = retries + 1
 
 async function getMetaMaskSigner(ethOverride?: any) {
 	const eth: any = ethOverride || getMetaMaskProvider();
@@ -13,22 +18,45 @@ async function getMetaMaskSigner(ethOverride?: any) {
 	return provider.getSigner();
 }
 
-export async function uploadBlobTo0G(blob: Blob, filename: string, ethOverride?: any): Promise<{ rootHash: string; txHash: string; }> {
-	const file = new (ZgBlob as any)(blob);
-	const [tree, treeErr] = await file.merkleTree();
-	if (treeErr) {
-		await file.close?.();
-		throw new Error(`Merkle error: ${treeErr}`);
-	}
-	const rootHash = String(tree!.rootHash());
+export async function uploadBlobTo0G(
+        blob: Blob,
+        filename: string,
+        ethOverride?: any
+): Promise<{ rootHash: string; txHash: string }> {
+        // Pre-compute Merkle root once; this value is reused on retries.
+        const initialFile = new (ZgBlob as any)(blob);
+        const [tree, treeErr] = await initialFile.merkleTree();
+        if (treeErr) {
+                await initialFile.close?.();
+                throw new Error(`Merkle error: ${treeErr}`);
+        }
+        const rootHash = String(tree!.rootHash());
 
-	const signer = await getMetaMaskSigner(ethOverride);
-	const indexer = new (Indexer as any)(INDEXER_RPC);
-	const [tx, uploadErr] = await indexer.upload(file as any, RPC_URL, (await signer) as any);
-	await file.close?.();
-	if (uploadErr) throw new Error(`Upload error: ${uploadErr}`);
+        const signer = await getMetaMaskSigner(ethOverride);
+        const indexer = new (Indexer as any)(INDEXER_RPC);
 
-	return { rootHash, txHash: tx };
+        let lastErr: any;
+        for (let attempt = 0; attempt <= UPLOAD_RETRIES; attempt++) {
+                const file = attempt === 0 ? initialFile : new (ZgBlob as any)(blob);
+                const [tx, uploadErr] = await indexer.upload(
+                        file as any,
+                        RPC_URL,
+                        (await signer) as any
+                );
+                await file.close?.();
+                if (!uploadErr) {
+                        return { rootHash, txHash: tx };
+                }
+                lastErr = uploadErr;
+                // Small delay before retrying to avoid immediate repeat failure
+                if (attempt < UPLOAD_RETRIES) {
+                        await new Promise((res) => setTimeout(res, 1000 * (attempt + 1)));
+                }
+        }
+
+        const reason =
+                (lastErr?.reason || lastErr?.message || lastErr)?.toString() || 'Unknown error';
+        throw new Error(`Upload error: ${reason}`);
 }
 
 export async function uploadImageAndMetadata(
