@@ -62,7 +62,8 @@ Traditional AI Agents often:
 
 ## Demo
 
-Check out the demo video: [Watch on YouTube](https://youtu.be/14HhlGqSuws)
+Check out the 1st wave video: [Watch on YouTube](https://youtu.be/14HhlGqSuws)
+Check out the 2nd wave video: [Watch on YouTube](https://youtu.be/nnUJba4QM0M)
 
 ---
 
