@@ -3,16 +3,13 @@
 // libraries attempt to access `http://` resources while the page itself is
 // served over HTTPS.
 
-// Default to a more permissive public CORS proxy that handles preflight
-// requests. When the proxy ends with `?` we URL encode the target before
-// appending so services like `corsproxy.io` work correctly.
+// Default to a permissive public CORS proxy that handles preflight
+// requests. When the proxy ends with `?` the target URL is appended
+// directly so services like `corsproxy.io` work correctly.
 const PROXY_BASE =
   import.meta.env.VITE_HTTP_PROXY || 'https://corsproxy.io/?';
 
 function buildProxyUrl(url: string): string {
-  if (PROXY_BASE.endsWith('?')) {
-    return PROXY_BASE + encodeURIComponent(url);
-  }
   return PROXY_BASE + url;
 }
 

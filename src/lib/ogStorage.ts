@@ -6,6 +6,10 @@ import { getMetaMaskProvider } from './provider';
 const RPC_URL = import.meta.env.VITE_OG_RPC_URL || 'https://evmrpc-testnet.0g.ai/';
 const INDEXER_RPC =
         import.meta.env.VITE_OG_INDEXER_RPC || 'https://indexer-storage-testnet-turbo.0g.ai';
+export const STORAGE_URL =
+        import.meta.env.VITE_OG_STORAGE_URL || 'https://storage-testnet.0g.ai';
+export const COMPUTE_URL =
+        import.meta.env.VITE_OG_COMPUTE_URL || 'https://compute-testnet.0g.ai';
 
 // Number of times to retry a failed upload. Helps mitigate occasional
 // `missing revert data` errors from the network.
