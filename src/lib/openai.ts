@@ -9,7 +9,7 @@ Return ONLY valid JSON with fields:
 - name (string; 1-4 words; striking and brandable)
 - tagline (string; one punchy sentence ≤120 chars)
 - tags (array of 3-6 short keywords)
-- longDescription (string; 150-300 words; include background, personality, signature traits, and a short lore hook)
+- longDescription (string; 100-150 words; include background, personality, signature traits, and a short lore hook)
 
 Rules:
 - English only.
