@@ -21,5 +21,9 @@ export default defineConfig({
       '0g-indexer': '/node_modules/@0glabs/0g-ts-sdk/lib.esm/indexer/Indexer.js',
       '0g-blob': '/node_modules/@0glabs/0g-ts-sdk/lib.esm/file/Blob.js'
     }
+  },
+  server: {
+    https: false,
+    hmr: { protocol: 'ws' }
   }
 })

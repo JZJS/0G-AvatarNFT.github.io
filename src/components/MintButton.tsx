@@ -71,16 +71,23 @@ export default function MintButton({ imageBase64, imageUrl, agentMeta, onMinted,
 			setStage('mint');
 			logFn?.('Step 3: Calling INFT contract...');
 			const provider = new ethers.BrowserProvider(eth);
+			// 显式使用 legacy gas，避免 eth_maxPriorityFeePerGas 调用
+			(provider as any).getFeeData = async () => ({
+				gasPrice: ethers.parseUnits('1', 'gwei'),
+				maxFeePerGas: null,
+				maxPriorityFeePerGas: null
+			});
 			const signer = await provider.getSigner();
 			const inft = new ethers.Contract(INFT_CONTRACT_ADDRESS, INFT_CONTRACT_ABI, signer);
 
 			// Try different method names depending on ABI
 			let tx;
+			const overrides = { gasPrice: ethers.parseUnits('1', 'gwei') } as const;
 			if (typeof inft.mint === 'function') {
-				tx = await inft.mint(account, metadataURI, metadataHash);
+				tx = await inft.mint(account, metadataURI, metadataHash, overrides);
 			} else if (typeof inft.mintINFT === 'function') {
 				// fallback to older placeholder
-				tx = await inft.mintINFT(account, metadataURI, metadataURI);
+				tx = await inft.mintINFT(account, metadataURI, metadataURI, overrides);
 			} else {
 				throw new Error('Mint method not found on INFT contract');
 			}

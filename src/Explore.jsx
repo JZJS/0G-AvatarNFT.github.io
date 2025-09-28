@@ -4,7 +4,7 @@ import ChatInput from "./components/ChatInput.jsx";
 import MintModal from "./components/MintModal.jsx";
 import MintButton from "@/components/MintButton";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { generatePersona } from "./lib/openai.js";
+import { generatePersona as generatePersonaViaCompute, chatAsPersona } from "./lib/compute.ts";
 
 function classNames(...arr) {
   return arr.filter(Boolean).join(" ");
@@ -67,7 +67,7 @@ export default function Explore() {
     appendLog("Generating persona...");
     try {
       const inputText = text || url;
-      const jsonStr = await generatePersona(inputText);
+      const jsonStr = await generatePersonaViaCompute(inputText);
       const persona = JSON.parse(jsonStr);
 
       setPersona(persona);
@@ -133,26 +133,7 @@ Please respond as this character. Keep responses in character and engaging. The 
 
 User message: ${userMessage}`;
 
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [{ role: "user", content: contextPrompt }],
-          temperature: 0.8,
-          max_tokens: 300
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Chat API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const aiResponse = data.choices?.[0]?.message?.content || "Sorry, I couldn't respond properly.";
+      const aiResponse = await chatAsPersona(persona, userMessage);
 
       // Add AI response to chat
       const newAiMessage = { role: "assistant", content: aiResponse, timestamp: new Date() };
